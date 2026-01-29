@@ -51,7 +51,7 @@ const App = () => {
       setStatus({ 
         type: 'error', 
         msg: '연결 실패: ' + err.message,
-        tip: '토큰과 데이터베이스 연결 설정을 다시 한번 확인해 주세요.'
+        tip: '토큰이 올바른지 확인하고, 노션 워크스페이스에 이 통합이 초대되었는지 확인해 주세요.'
       });
     } finally { setFetchingDbs(false); }
   };
@@ -90,10 +90,11 @@ const App = () => {
       setDatabases(dbs);
       setStatus({ type: 'success', msg: `${dbs.length}개의 DB를 찾았습니다!` });
     } catch (err) { 
+      const is401 = err.message.includes('유효하지 않습니다');
       setStatus({ 
         type: 'error', 
-        msg: '연결 오류: ' + err.message,
-        tip: '네트워크 상태가 불안정하거나 프록시 서버가 차단되었을 수 있습니다.'
+        msg: is401 ? '노션 토큰 오류' : '연결 오류: ' + err.message,
+        tip: is401 ? '입력하신 노션 API 토큰(secret_...)이 틀렸습니다. 다시 복사해 주세요.' : '네트워크 상태가 불안정하거나 프록시 서버가 차단되었을 수 있습니다.'
       }); 
     }
     finally { setFetchingDbs(false); }
@@ -101,8 +102,8 @@ const App = () => {
 
   const generateShareUrl = () => {
     const baseUrl = window.location.origin + window.location.pathname;
-    const n = btoa(config.notionToken);
-    const a = btoa(config.aladdinTtbKey);
+    const n = btoa(config.notionToken.trim());
+    const a = btoa(config.aladdinTtbKey.trim());
     const d = config.notionDatabaseId;
     const finalUrl = `${baseUrl}?n=${n}&a=${a}&d=${d}`;
     setShareUrl(finalUrl);
@@ -137,7 +138,7 @@ const App = () => {
           <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-[#FFDDE5] border-t-[#D67C8C] rounded-full animate-spin mb-4"></div>
             <p className="text-xs text-[#D67C8C] font-bold">보안 연결 시도 중...</p>
-            <p className="text-[10px] text-gray-400 mt-2 italic">최적의 경로를 찾는 중입니다</p>
+            <p className="text-[10px] text-gray-400 mt-2 italic">노션 서버와 통신 중입니다</p>
           </div>
         `}
         <div className="pink-header flex justify-between items-center">
@@ -170,7 +171,7 @@ const App = () => {
                       <option value="">DB를 선택하세요</option>
                       ${databases.map(db => html`<option key=${db.id} value=${db.id}>${db.title}</option>`)}
                     </select>
-                    <button onClick=${handleFetchDatabases} className="px-4 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold">연결</button>
+                    <button onClick=${handleFetchDatabases} className="px-4 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold active:scale-95 transition-all">연결</button>
                   </div>
                 </div>
                 ${status && html`
@@ -181,8 +182,8 @@ const App = () => {
                 `}
               </div>
               <div className="flex flex-col gap-2 mt-4">
-                <button onClick=${() => setStep('search')} className="w-full py-4 bg-[#D67C8C] text-white rounded-xl font-bold">시작하기</button>
-                <button onClick=${generateShareUrl} className="w-full py-3 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-xs font-bold">노션 전용 링크 복사</button>
+                <button onClick=${() => setStep('search')} className="w-full py-4 bg-[#D67C8C] text-white rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all">시작하기</button>
+                <button onClick=${generateShareUrl} className="w-full py-3 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-xs font-bold hover:bg-[#FFF0F3] transition-all">노션 전용 링크 복사</button>
               </div>
             </div>
           ` : html`
@@ -194,7 +195,7 @@ const App = () => {
               <div className="dotted-line shrink-0"></div>
               
               ${status && html`
-                <div className="mb-4 p-3 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}">
+                <div className="mb-4 p-3 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} animate-in fade-in duration-300">
                   <b>${status.msg}</b>
                 </div>
               `}
@@ -203,14 +204,14 @@ const App = () => {
                 ${results.length > 0 ? html`
                   <div className="grid gap-4 pb-4">
                     ${results.map(book => html`
-                      <div key=${book.itemId} className="flex gap-4 p-3 bg-white border border-[#f5f5f5] rounded-2xl group transition-all">
-                        <img src=${book.cover} className="w-20 h-28 object-cover rounded-lg shadow-sm" />
+                      <div key=${book.itemId} className="flex gap-4 p-3 bg-white border border-[#f5f5f5] rounded-2xl group transition-all hover:border-[#FFDDE5] hover:shadow-sm">
+                        <img src=${book.cover} className="w-20 h-28 object-cover rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col justify-between flex-1 py-1">
                           <div>
                             <h3 className="font-bold text-xs line-clamp-2">${book.title}</h3>
                             <p className="text-[10px] text-gray-400 mt-1">${book.author}</p>
                           </div>
-                          <button onClick=${() => handleAddToNotion(book)} className="w-full py-2 bg-[#FFF0F3] text-[#D67C8C] rounded-xl text-[10px] font-bold">
+                          <button onClick=${() => handleAddToNotion(book)} className="w-full py-2 bg-[#FFF0F3] text-[#D67C8C] rounded-xl text-[10px] font-bold hover:bg-[#D67C8C] hover:text-white transition-colors">
                             ${addingId === book.itemId ? html`<i className="fas fa-spinner fa-spin"></i>` : '저장하기'}
                           </button>
                         </div>

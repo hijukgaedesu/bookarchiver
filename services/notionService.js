@@ -5,12 +5,20 @@
  */
 const NOTION_PROXY = '/api/notion';
 
-const getHeaders = (token, targetUrl) => ({
-  'Authorization': `Bearer ${token}`,
-  'Notion-Version': '2022-06-28',
-  'Content-Type': 'application/json',
-  'x-target-url': targetUrl
-});
+const getHeaders = (token, targetUrl) => {
+  // 토큰 정제: 공백 제거 및 Bearer 중복 방지
+  let cleanToken = (token || '').trim();
+  if (cleanToken.startsWith('Bearer ')) {
+    cleanToken = cleanToken.replace('Bearer ', '');
+  }
+
+  return {
+    'Authorization': `Bearer ${cleanToken}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+    'x-target-url': targetUrl
+  };
+};
 
 export const fetchDatabases = async (token) => {
   const targetUrl = 'https://api.notion.com/v1/search';
@@ -27,6 +35,10 @@ export const fetchDatabases = async (token) => {
 
     const data = await response.json();
     if (!response.ok) {
+      // 401 에러인 경우 더 구체적인 메시지 던짐
+      if (response.status === 401) {
+        throw new Error('노션 API 토큰이 유효하지 않습니다.');
+      }
       throw new Error(data.message || `노션 에러 (${response.status})`);
     }
 
@@ -39,10 +51,6 @@ export const fetchDatabases = async (token) => {
       }));
   } catch (error) {
     console.error('fetchDatabases error:', error);
-    // Vercel 함수 자체가 404라면 로컬 테스트 중일 수 있으므로 알림
-    if (error.message.includes('Unexpected token')) {
-      throw new Error('서버리스 함수를 찾을 수 없습니다. 배포 상태를 확인하세요.');
-    }
     throw error;
   }
 };
