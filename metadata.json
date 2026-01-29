@@ -1,0 +1,5 @@
+{
+  "name": "Aladdin Book to Notion Archiver",
+  "description": "Search for books using the Aladdin API and instantly save them to your Notion database with covers, authors, and descriptions.",
+  "requestFramePermissions": []
+}

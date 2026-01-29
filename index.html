@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aladdin to Notion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: #ffffff;
+            color: #4a4a4a;
+        }
+
+        .pink-window {
+            border: 2px solid #FFDDE5;
+            border-radius: 20px;
+            background-color: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(255, 221, 229, 0.5);
+        }
+
+        .pink-header {
+            background-color: #FFF0F3;
+            border-bottom: 2px solid #FFDDE5;
+            padding: 12px 20px;
+        }
+
+        .pink-input {
+            border: 1px solid #e2e2e2;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .pink-input:focus {
+            border-color: #FFC1CC;
+            box-shadow: 0 0 0 3px rgba(255, 193, 204, 0.2);
+        }
+
+        .pink-button-square {
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid #FFC1CC;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #D67C8C;
+            transition: all 0.2s;
+        }
+
+        .pink-button-square:hover {
+            background-color: #FFF0F3;
+            transform: scale(1.05);
+        }
+
+        .dotted-line {
+            border-top: 1.5px dotted #e2e2e2;
+            margin: 20px 0;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #FFDDE5;
+            border-radius: 10px;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
