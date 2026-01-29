@@ -1,31 +1,50 @@
 
-// corsproxy.io의 403 에러를 피하기 위해 더 유연한 프록시로 교체합니다.
-const PROXY_BASE = 'https://api.codetabs.com/v1/proxy?quest=';
-
-export const fetchDatabases = async (token) => {
-  const apiUrl = 'https://api.notion.com/v1/search';
-  try {
-    // URL 인코딩을 통해 프록시에 전달
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
-      method: 'POST',
+/**
+ * Vercel 환경인지 확인하고 전용 프록시 또는 공용 프록시를 선택합니다.
+ */
+const getRequestConfig = (url, token) => {
+  // Vercel에서 호스팅 중일 경우 자기 자신의 API Route 사용
+  const isVercel = window.location.hostname.includes('vercel.app');
+  
+  if (isVercel) {
+    return {
+      fetchUrl: '/api/notion',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Notion-Version': '2022-06-28',
-        'Content-Type': 'application/json'
-        // 불필요한 커스텀 헤더는 프록시에서 403을 유발할 수 있으므로 제거함
-      },
+        'Content-Type': 'application/json',
+        'x-target-url': url // 서버리스 함수에게 전달할 실제 노션 API 주소
+      }
+    };
+  }
+
+  // 로컬이나 깃허브 페이지일 경우 (차선책: thingproxy가 POST에 그나마 강함)
+  return {
+    fetchUrl: `https://thingproxy.freeboard.io/fetch/${url}`,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+    }
+  };
+};
+
+export const fetchDatabases = async (token) => {
+  const apiUrl = 'https://api.notion.com/v1/search';
+  const config = getRequestConfig(apiUrl, token);
+
+  try {
+    const response = await fetch(config.fetchUrl, {
+      method: 'POST',
+      headers: config.headers,
       body: JSON.stringify({
         filter: { property: 'object', value: 'database' },
         page_size: 100
       })
     });
 
-    if (response.status === 403) {
-      throw new Error('프록시 서버가 요청을 거부했습니다(403). 잠시 후 다시 시도하거나 다른 브라우저에서 테스트해 주세요.');
-    }
-
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || '노션 API 응답 오류');
+    if (!response.ok) throw new Error(data.message || '노션 연결 실패');
 
     return (data.results || [])
       .filter(item => item.object === 'database')
@@ -36,14 +55,14 @@ export const fetchDatabases = async (token) => {
       }));
   } catch (error) {
     console.error('Notion Fetch Error:', error);
-    throw new Error(error.message.includes('Load failed') || error.message.includes('fetch')
-      ? 'CORS 차단 발생: 브라우저 보안 정책으로 인해 요청이 막혔습니다.' 
-      : error.message);
+    throw error;
   }
 };
 
 export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
   const apiUrl = 'https://api.notion.com/v1/pages';
+  const config = getRequestConfig(apiUrl, token);
+  
   const properties = {};
   if (propertyMap.title) properties[propertyMap.title] = { title: [{ text: { content: book.title } }] };
   if (propertyMap.author) properties[propertyMap.author] = { rich_text: [{ text: { content: book.author } }] };
@@ -61,21 +80,16 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
   };
 
   try {
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
+    const response = await fetch(config.fetchUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Notion-Version': '2022-06-28',
-        'Content-Type': 'application/json'
-      },
+      headers: config.headers,
       body: JSON.stringify(body)
     });
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || '노션 페이지 생성 실패');
-    }
-    return await response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || '노션 페이지 생성 실패');
+    
+    return data;
   } catch (error) {
     console.error('Notion Add Error:', error);
     throw error;

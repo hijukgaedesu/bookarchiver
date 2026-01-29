@@ -4,7 +4,6 @@ const PROXY_BASE = 'https://api.allorigins.win/raw?url=';
 export const searchBooks = async (query, ttbKey) => {
   if (!ttbKey) throw new Error('알라딘 TTB 키가 필요합니다.');
   
-  // 캐시 방지를 위해 랜덤 파라미터 추가 및 HTTPS 강제
   const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=10&start=1&SearchTarget=Book&output=js&Version=20131101&_=${Date.now()}`;
   
   try {
@@ -15,8 +14,11 @@ export const searchBooks = async (query, ttbKey) => {
     if (data.errorCode) throw new Error(data.errorMessage || '알라딘 API 키 오류');
 
     return (data.item || []).map(item => {
-      // 모든 http 주소를 https로 변경 (Mixed Content 방지)
-      const fixUrl = (url) => (url && url.startsWith('http://') ? url.replace('http://', 'https://') : url);
+      // 모든 http 주소를 https로 강제 변환하여 보안 오류 방지
+      const fixUrl = (url) => {
+        if (!url) return '';
+        return url.replace('http://', 'https://');
+      };
       
       return {
         itemId: item.itemId,

@@ -41,6 +41,7 @@ const App = () => {
   }, []);
 
   const autoInitialize = async (conf) => {
+    if (!conf.notionToken) return;
     setFetchingDbs(true);
     try {
       const dbs = await fetchDatabases(conf.notionToken);
@@ -50,7 +51,7 @@ const App = () => {
       setStatus({ 
         type: 'error', 
         msg: '연결 실패: ' + err.message,
-        tip: '공용 프록시 서버의 일시적 장애일 수 있습니다. "Allow CORS" 확장 프로그램을 설치하시면 가장 확실하게 해결됩니다.'
+        tip: '토큰과 데이터베이스 연결 설정을 다시 한번 확인해 주세요.'
       });
     } finally { setFetchingDbs(false); }
   };
@@ -87,12 +88,12 @@ const App = () => {
     try {
       const dbs = await fetchDatabases(config.notionToken);
       setDatabases(dbs);
-      setStatus({ type: 'success', msg: `${dbs.length}개의 DB 발견!` });
+      setStatus({ type: 'success', msg: `${dbs.length}개의 DB를 찾았습니다!` });
     } catch (err) { 
       setStatus({ 
         type: 'error', 
-        msg: '오류: ' + err.message,
-        tip: '크롬 확장 프로그램 "Allow CORS"를 켜시면 프록시 없이 안전하게 연결 가능합니다.'
+        msg: '연결 오류: ' + err.message,
+        tip: '네트워크 상태가 불안정하거나 프록시 서버가 차단되었을 수 있습니다.'
       }); 
     }
     finally { setFetchingDbs(false); }
@@ -124,7 +125,7 @@ const App = () => {
     setAddingId(book.itemId); setStatus(null);
     try {
       await addBookToNotion(book, config.notionToken, config.notionDatabaseId, propertyStatus?.map);
-      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "노션 앱에서 확인해 보세요! ♡" });
+      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "노션에서 확인해 보세요!" });
     } catch (err) { setStatus({ type: 'error', msg: '등록 실패: ' + err.message }); }
     finally { setAddingId(null); }
   };
@@ -135,7 +136,8 @@ const App = () => {
         ${fetchingDbs && html`
           <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-[#FFDDE5] border-t-[#D67C8C] rounded-full animate-spin mb-4"></div>
-            <p className="text-xs text-[#D67C8C] font-bold">서재 정보를 가져오는 중...</p>
+            <p className="text-xs text-[#D67C8C] font-bold">보안 연결 시도 중...</p>
+            <p className="text-[10px] text-gray-400 mt-2 italic">최적의 경로를 찾는 중입니다</p>
           </div>
         `}
         <div className="pink-header flex justify-between items-center">
@@ -174,16 +176,7 @@ const App = () => {
                 ${status && html`
                   <div className="p-4 rounded-xl border ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}">
                     <p className="text-[11px] font-bold mb-1">${status.msg}</p>
-                    ${status.tip && html`<p className="text-[10px] opacity-80 leading-relaxed mt-1">💡 ${status.tip}</p>`}
-                  </div>
-                `}
-                ${propertyStatus && (propertyStatus.missing.length > 0 || propertyStatus.typeErrors.length > 0) && html`
-                  <div className="p-4 bg-pink-50 rounded-xl border border-pink-100">
-                    <p className="text-[11px] font-bold text-pink-600 mb-2">⚠️ 노션 설정 필요:</p>
-                    <ul className="text-[10px] text-pink-500 space-y-1">
-                      ${propertyStatus.missing.map(m => html`<li>• [${m}] 컬럼 없음</li>`)}
-                      ${propertyStatus.typeErrors.map(e => html`<li>• ${e}</li>`)}
-                    </ul>
+                    ${status.tip && html`<p className="text-[10px] opacity-80 mt-1">💡 ${status.tip}</p>`}
                   </div>
                 `}
               </div>
@@ -203,7 +196,6 @@ const App = () => {
               ${status && html`
                 <div className="mb-4 p-3 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}">
                   <b>${status.msg}</b>
-                  ${status.tip && html`<p className="mt-1">${status.tip}</p>`}
                 </div>
               `}
 
