@@ -49,8 +49,8 @@ const App = () => {
     } catch (err) {
       setStatus({ 
         type: 'error', 
-        msg: '자동 연결 실패: ' + err.message,
-        tip: '노션 DB 우측 상단 [...] -> [연결 추가]에서 만든 인테그레이션을 추가했는지 확인해주세요!'
+        msg: '연결 실패: ' + err.message,
+        tip: '공용 프록시 서버의 일시적 장애일 수 있습니다. "Allow CORS" 확장 프로그램을 설치하시면 가장 확실하게 해결됩니다.'
       });
     } finally { setFetchingDbs(false); }
   };
@@ -91,8 +91,8 @@ const App = () => {
     } catch (err) { 
       setStatus({ 
         type: 'error', 
-        msg: '연결 실패: ' + err.message,
-        tip: '토큰이 정확하다면, 노션 DB 설정에서 인테그레이션을 "연결 추가" 했는지 꼭 확인하세요!'
+        msg: '오류: ' + err.message,
+        tip: '크롬 확장 프로그램 "Allow CORS"를 켜시면 프록시 없이 안전하게 연결 가능합니다.'
       }); 
     }
     finally { setFetchingDbs(false); }
@@ -124,7 +124,7 @@ const App = () => {
     setAddingId(book.itemId); setStatus(null);
     try {
       await addBookToNotion(book, config.notionToken, config.notionDatabaseId, propertyStatus?.map);
-      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "갤러리 뷰라면 '페이지 커버'로 미리보기를 설정해 보세요! ♡" });
+      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "노션 앱에서 확인해 보세요! ♡" });
     } catch (err) { setStatus({ type: 'error', msg: '등록 실패: ' + err.message }); }
     finally { setAddingId(null); }
   };
