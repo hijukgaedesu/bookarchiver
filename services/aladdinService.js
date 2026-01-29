@@ -1,10 +1,11 @@
 
 const PROXY_BASE = 'https://api.allorigins.win/raw?url=';
 
-export const searchBooks = async (query, ttbKey) => {
+export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
   if (!ttbKey) throw new Error('알라딘 TTB 키가 필요합니다.');
   
-  const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=10&start=1&SearchTarget=Book&output=js&Version=20131101&_=${Date.now()}`;
+  // searchTarget: Book(국내도서), Foreign(외국도서), eBook(전자책), All(전체)
+  const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=20&start=1&SearchTarget=${searchTarget}&output=js&Version=20131101&_=${Date.now()}`;
   
   try {
     const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`);
@@ -25,7 +26,7 @@ export const searchBooks = async (query, ttbKey) => {
         title: item.title,
         author: item.author,
         description: item.description,
-        cover: fixUrl(item.cover).replace('sum', '500'),
+        cover: fixUrl(item.cover).replace('sum', '500'), // 고해상도 이미지로 교체
         link: fixUrl(item.link)
       };
     });

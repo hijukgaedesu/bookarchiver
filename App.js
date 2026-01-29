@@ -16,6 +16,7 @@ const App = () => {
 
   const [databases, setDatabases] = useState([]);
   const [query, setQuery] = useState('');
+  const [searchTarget, setSearchTarget] = useState('Book'); // 검색 대상 상태 추가
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingDbs, setFetchingDbs] = useState(false);
@@ -116,8 +117,12 @@ const App = () => {
     if (!query) return;
     setLoading(true); setStatus(null);
     try {
-      const books = await searchBooks(query, config.aladdinTtbKey);
+      // searchTarget 추가 전달
+      const books = await searchBooks(query, config.aladdinTtbKey, searchTarget);
       setResults(books);
+      if (books.length === 0) {
+        setStatus({ type: 'error', msg: '검색 결과가 없습니다.', tip: '검색 대상을 [전체] 또는 [eBook]으로 바꿔보세요.' });
+      }
     } catch (err) { setStatus({ type: 'error', msg: '검색 실패: ' + err.message }); }
     finally { setLoading(false); }
   };
@@ -133,7 +138,7 @@ const App = () => {
 
   return html`
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#fcfcfc]">
-      <div className="w-full max-w-[480px] pink-window flex flex-col h-[680px] shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-[480px] pink-window flex flex-col h-[580px] shadow-2xl relative overflow-hidden">
         ${fetchingDbs && html`
           <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-[#FFDDE5] border-t-[#D67C8C] rounded-full animate-spin mb-4"></div>
@@ -151,74 +156,92 @@ const App = () => {
         <div className="p-6 flex flex-col flex-1 overflow-hidden">
           ${step === 'config' ? html`
             <div className="flex flex-col h-full">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-[#D67C8C] mb-1">Book Archiver</h1>
-                <p className="text-xs text-gray-400">나만의 소중한 서재를 만들어보세요 ♡</p>
+              <div className="mb-4">
+                <h1 className="text-xl font-bold text-[#D67C8C] mb-0.5">Book Archiver</h1>
+                <p className="text-[10px] text-gray-400">나만의 소중한 서재를 만들어보세요 ♡</p>
               </div>
-              <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-1">
+              <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#D67C8C] ml-1 uppercase">Notion Token</label>
-                  <input type="password" value=${config.notionToken} onChange=${e => setConfig({...config, notionToken: e.target.value})} placeholder="secret_..." className="w-full p-3 text-xs pink-input" />
+                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Notion Token</label>
+                  <input type="password" value=${config.notionToken} onChange=${e => setConfig({...config, notionToken: e.target.value})} placeholder="secret_..." className="w-full p-2.5 text-xs pink-input" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#D67C8C] ml-1 uppercase">Aladdin Key</label>
-                  <input type="text" value=${config.aladdinTtbKey} onChange=${e => setConfig({...config, aladdinTtbKey: e.target.value})} placeholder="TTB Key" className="w-full p-3 text-xs pink-input" />
+                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Aladdin Key</label>
+                  <input type="text" value=${config.aladdinTtbKey} onChange=${e => setConfig({...config, aladdinTtbKey: e.target.value})} placeholder="TTB Key" className="w-full p-2.5 text-xs pink-input" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#D67C8C] ml-1 uppercase">Select Database</label>
+                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Select Database</label>
                   <div className="flex gap-2">
-                    <select value=${config.notionDatabaseId} onChange=${e => setConfig({...config, notionDatabaseId: e.target.value})} className="flex-1 p-3 text-xs pink-input bg-white appearance-none cursor-pointer">
+                    <select value=${config.notionDatabaseId} onChange=${e => setConfig({...config, notionDatabaseId: e.target.value})} className="flex-1 p-2.5 text-xs pink-input bg-white appearance-none cursor-pointer">
                       <option value="">DB를 선택하세요</option>
                       ${databases.map(db => html`<option key=${db.id} value=${db.id}>${db.title}</option>`)}
                     </select>
-                    <button onClick=${handleFetchDatabases} className="px-4 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold active:scale-95 transition-all">연결</button>
+                    <button onClick=${handleFetchDatabases} className="px-3 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold active:scale-95 transition-all">연결</button>
                   </div>
                 </div>
                 ${status && html`
-                  <div className="p-4 rounded-xl border ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}">
-                    <p className="text-[11px] font-bold mb-1">${status.msg}</p>
-                    ${status.tip && html`<p className="text-[10px] opacity-80 mt-1">💡 ${status.tip}</p>`}
+                  <div className="p-3 rounded-xl border ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}">
+                    <p className="text-[10px] font-bold mb-0.5">${status.msg}</p>
+                    ${status.tip && html`<p className="text-[9px] opacity-80 mt-0.5">💡 ${status.tip}</p>`}
                   </div>
                 `}
               </div>
-              <div className="flex flex-col gap-2 mt-4">
-                <button onClick=${() => setStep('search')} className="w-full py-4 bg-[#D67C8C] text-white rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all">시작하기</button>
-                <button onClick=${generateShareUrl} className="w-full py-3 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-xs font-bold hover:bg-[#FFF0F3] transition-all">노션 전용 링크 복사</button>
+              <div className="flex flex-col gap-2 mt-3">
+                <button onClick=${() => setStep('search')} className="w-full py-3 bg-[#D67C8C] text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all">시작하기</button>
+                <button onClick=${generateShareUrl} className="w-full py-2 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-[10px] font-bold hover:bg-[#FFF0F3] transition-all">노션 전용 링크 복사</button>
               </div>
             </div>
           ` : html`
             <div className="flex flex-col h-full">
-              <form onSubmit=${handleSearch} className="flex gap-3 items-center shrink-0">
-                <input type="text" value=${query} onChange=${e => setQuery(e.target.value)} placeholder="검색어 입력..." className="flex-1 p-3 pink-input text-sm shadow-inner" />
-                <button type="submit" className="pink-button-square">${loading ? html`<i className="fas fa-spinner fa-spin"></i>` : html`<i className="fas fa-search"></i>`}</button>
+              <form onSubmit=${handleSearch} className="flex gap-2 items-center shrink-0">
+                <select 
+                  value=${searchTarget} 
+                  onChange=${e => setSearchTarget(e.target.value)}
+                  className="w-20 p-2.5 pink-input text-[10px] bg-white appearance-none cursor-pointer text-[#D67C8C] font-bold text-center"
+                >
+                  <option value="Book">도서</option>
+                  <option value="eBook">eBook</option>
+                  <option value="All">전체</option>
+                </select>
+                <input 
+                  type="text" 
+                  value=${query} 
+                  onChange=${e => setQuery(e.target.value)} 
+                  placeholder="검색어 입력..." 
+                  className="flex-1 p-2.5 pink-input text-sm shadow-inner" 
+                />
+                <button type="submit" className="pink-button-square h-10 w-10">
+                  ${loading ? html`<i className="fas fa-spinner fa-spin"></i>` : html`<i className="fas fa-search"></i>`}
+                </button>
               </form>
-              <div className="dotted-line shrink-0"></div>
+              <div className="dotted-line shrink-0 my-3"></div>
               
               ${status && html`
-                <div className="mb-4 p-3 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} animate-in fade-in duration-300">
+                <div className="mb-3 p-2.5 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} animate-in fade-in duration-300">
                   <b>${status.msg}</b>
+                  ${status.tip && html`<p className="opacity-70 mt-0.5">${status.tip}</p>`}
                 </div>
               `}
 
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 ${results.length > 0 ? html`
-                  <div className="grid gap-4 pb-4">
+                  <div className="grid gap-3 pb-3">
                     ${results.map(book => html`
-                      <div key=${book.itemId} className="flex gap-4 p-3 bg-white border border-[#f5f5f5] rounded-2xl group transition-all hover:border-[#FFDDE5] hover:shadow-sm">
-                        <img src=${book.cover} className="w-20 h-28 object-cover rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
-                        <div className="flex flex-col justify-between flex-1 py-1">
+                      <div key=${book.itemId} className="flex gap-3 p-2.5 bg-white border border-[#f5f5f5] rounded-2xl group transition-all hover:border-[#FFDDE5] hover:shadow-sm">
+                        <img src=${book.cover} className="w-16 h-24 object-cover rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
+                        <div className="flex flex-col justify-between flex-1 py-0.5 min-w-0">
                           <div>
-                            <h3 className="font-bold text-xs line-clamp-2">${book.title}</h3>
-                            <p className="text-[10px] text-gray-400 mt-1">${book.author}</p>
+                            <h3 className="font-bold text-[11px] line-clamp-2 leading-tight">${book.title}</h3>
+                            <p className="text-[9px] text-gray-400 mt-1 truncate">${book.author}</p>
                           </div>
-                          <button onClick=${() => handleAddToNotion(book)} className="w-full py-2 bg-[#FFF0F3] text-[#D67C8C] rounded-xl text-[10px] font-bold hover:bg-[#D67C8C] hover:text-white transition-colors">
+                          <button onClick=${() => handleAddToNotion(book)} className="w-full py-1.5 bg-[#FFF0F3] text-[#D67C8C] rounded-xl text-[10px] font-bold hover:bg-[#D67C8C] hover:text-white transition-colors">
                             ${addingId === book.itemId ? html`<i className="fas fa-spinner fa-spin"></i>` : '저장하기'}
                           </button>
                         </div>
                       </div>
                     `)}
                   </div>
-                ` : html`<div className="h-full flex flex-col items-center justify-center text-[#e2e2e2] py-20"><i className="fas fa-magic text-5xl mb-4 opacity-20"></i><p>검색 결과가 여기에 나타나요!</p></div>`}
+                ` : html`<div className="h-full flex flex-col items-center justify-center text-[#e2e2e2] py-10"><i className="fas fa-magic text-4xl mb-3 opacity-20"></i><p className="text-xs">검색 결과가 여기에 나타나요!</p></div>`}
               </div>
             </div>
           `}
