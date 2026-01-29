@@ -47,7 +47,11 @@ const App = () => {
       setDatabases(dbs);
       setStep('search');
     } catch (err) {
-      setStatus({ type: 'error', msg: '자동 연결에 실패했습니다.' });
+      setStatus({ 
+        type: 'error', 
+        msg: '자동 연결 실패: ' + err.message,
+        tip: '노션 DB 우측 상단 [...] -> [연결 추가]에서 만든 인테그레이션을 추가했는지 확인해주세요!'
+      });
     } finally { setFetchingDbs(false); }
   };
 
@@ -84,7 +88,13 @@ const App = () => {
       const dbs = await fetchDatabases(config.notionToken);
       setDatabases(dbs);
       setStatus({ type: 'success', msg: `${dbs.length}개의 DB 발견!` });
-    } catch (err) { setStatus({ type: 'error', msg: '연결 실패' }); }
+    } catch (err) { 
+      setStatus({ 
+        type: 'error', 
+        msg: '연결 실패: ' + err.message,
+        tip: '토큰이 정확하다면, 노션 DB 설정에서 인테그레이션을 "연결 추가" 했는지 꼭 확인하세요!'
+      }); 
+    }
     finally { setFetchingDbs(false); }
   };
 
@@ -106,7 +116,7 @@ const App = () => {
     try {
       const books = await searchBooks(query, config.aladdinTtbKey);
       setResults(books);
-    } catch (err) { setStatus({ type: 'error', msg: '검색 실패' }); }
+    } catch (err) { setStatus({ type: 'error', msg: '검색 실패: ' + err.message }); }
     finally { setLoading(false); }
   };
 
@@ -114,8 +124,8 @@ const App = () => {
     setAddingId(book.itemId); setStatus(null);
     try {
       await addBookToNotion(book, config.notionToken, config.notionDatabaseId, propertyStatus?.map);
-      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "페이지 커버로 설정해 보세요! ♡" });
-    } catch (err) { setStatus({ type: 'error', msg: '등록 실패' }); }
+      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "갤러리 뷰라면 '페이지 커버'로 미리보기를 설정해 보세요! ♡" });
+    } catch (err) { setStatus({ type: 'error', msg: '등록 실패: ' + err.message }); }
     finally { setAddingId(null); }
   };
 
@@ -161,17 +171,22 @@ const App = () => {
                     <button onClick=${handleFetchDatabases} className="px-4 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold">연결</button>
                   </div>
                 </div>
+                ${status && html`
+                  <div className="p-4 rounded-xl border ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}">
+                    <p className="text-[11px] font-bold mb-1">${status.msg}</p>
+                    ${status.tip && html`<p className="text-[10px] opacity-80 leading-relaxed mt-1">💡 ${status.tip}</p>`}
+                  </div>
+                `}
                 ${propertyStatus && (propertyStatus.missing.length > 0 || propertyStatus.typeErrors.length > 0) && html`
-                  <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-                    <p className="text-[11px] font-bold text-red-600 mb-2">⚠️ 노션 설정 필요:</p>
-                    <ul className="text-[10px] text-red-500 space-y-1">
+                  <div className="p-4 bg-pink-50 rounded-xl border border-pink-100">
+                    <p className="text-[11px] font-bold text-pink-600 mb-2">⚠️ 노션 설정 필요:</p>
+                    <ul className="text-[10px] text-pink-500 space-y-1">
                       ${propertyStatus.missing.map(m => html`<li>• [${m}] 컬럼 없음</li>`)}
                       ${propertyStatus.typeErrors.map(e => html`<li>• ${e}</li>`)}
                     </ul>
                   </div>
                 `}
               </div>
-              ${status && html`<div className="mt-4 p-3 rounded-lg text-[11px] bg-pink-50 text-[#D67C8C] border border-[#FFDDE5]">${status.msg}</div>`}
               <div className="flex flex-col gap-2 mt-4">
                 <button onClick=${() => setStep('search')} className="w-full py-4 bg-[#D67C8C] text-white rounded-xl font-bold">시작하기</button>
                 <button onClick=${generateShareUrl} className="w-full py-3 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-xs font-bold">노션 전용 링크 복사</button>
@@ -184,6 +199,14 @@ const App = () => {
                 <button type="submit" className="pink-button-square">${loading ? html`<i className="fas fa-spinner fa-spin"></i>` : html`<i className="fas fa-search"></i>`}</button>
               </form>
               <div className="dotted-line shrink-0"></div>
+              
+              ${status && html`
+                <div className="mb-4 p-3 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}">
+                  <b>${status.msg}</b>
+                  ${status.tip && html`<p className="mt-1">${status.tip}</p>`}
+                </div>
+              `}
+
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 ${results.length > 0 ? html`
                   <div className="grid gap-4 pb-4">
@@ -204,7 +227,6 @@ const App = () => {
                   </div>
                 ` : html`<div className="h-full flex flex-col items-center justify-center text-[#e2e2e2] py-20"><i className="fas fa-magic text-5xl mb-4 opacity-20"></i><p>검색 결과가 여기에 나타나요!</p></div>`}
               </div>
-              ${status && html`<div className="mt-2 p-3 bg-pink-50 rounded-lg text-[10px] text-[#D67C8C]">${status.msg}</div>`}
             </div>
           `}
         </div>

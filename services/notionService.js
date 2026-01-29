@@ -16,13 +16,23 @@ export const fetchDatabases = async (token) => {
         page_size: 100
       })
     });
+
     const data = await response.json();
+    
+    if (!response.ok) {
+      // 노션에서 보내주는 구체적인 에러 메시지(예: API key invalid)를 활용
+      throw new Error(data.message || `노션 응답 오류: ${response.status}`);
+    }
+
     return (data.results || []).map(db => ({
       id: db.id,
       title: db.title[0]?.plain_text || '이름 없음',
       properties: db.properties
     }));
-  } catch (error) { throw error; }
+  } catch (error) {
+    console.error('Notion Fetch Error:', error);
+    throw new Error(error.message || '노션 API 연결 실패');
+  }
 };
 
 export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
@@ -43,14 +53,24 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
     ]
   };
 
-  const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Notion-Version': '2022-06-28',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  return await response.json();
+  try {
+    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || '노션 페이지 생성 실패');
+    }
+    return data;
+  } catch (error) {
+    console.error('Notion Add Error:', error);
+    throw error;
+  }
 };
