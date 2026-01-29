@@ -1,38 +1,48 @@
 
-// Vercel Serverless Function: 브라우저 대신 노션 API와 통신합니다.
 export default async function handler(req, res) {
-  // CORS 헤더 설정 (브라우저의 요청을 허용)
+  // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, Notion-Version'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, Notion-Version, x-target-url'
   );
 
-  // OPTIONS 요청 처리 (Preflight)
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  const { method, body, headers } = req;
-  const targetUrl = headers['x-target-url'] || 'https://api.notion.com/v1/search';
+  const targetUrl = req.headers['x-target-url'] || 'https://api.notion.com/v1/search';
+  const notionToken = req.headers['authorization'];
+  const notionVersion = req.headers['notion-version'] || '2022-06-28';
 
   try {
-    const notionResponse = await fetch(targetUrl, {
-      method: method,
+    const fetchOptions = {
+      method: req.method,
       headers: {
-        'Authorization': headers['authorization'],
-        'Notion-Version': headers['notion-version'] || '2022-06-28',
+        'Authorization': notionToken,
+        'Notion-Version': notionVersion,
         'Content-Type': 'application/json',
-      },
-      body: method === 'POST' ? JSON.stringify(body) : undefined,
-    });
+      }
+    };
 
-    const data = await notionResponse.json();
-    res.status(notionResponse.status).json(data);
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+      // Vercel은 req.body를 자동으로 파싱하므로 다시 문자열로 바꿔서 보냅니다.
+      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    }
+
+    const response = await fetch(targetUrl, fetchOptions);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    console.error('Proxy Error:', error);
+    res.status(500).json({ message: '노션 API 중계 중 서버 오류가 발생했습니다.', error: error.message });
   }
 }
