@@ -1,8 +1,10 @@
 
+// corsproxy.io는 POST 요청과 커스텀 헤더(Notion-Version)를 비교적 잘 처리합니다.
 const PROXY_BASE = 'https://corsproxy.io/?';
 
 export const fetchDatabases = async (token) => {
   const apiUrl = 'https://api.notion.com/v1/search';
+  
   try {
     const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
       method: 'POST',
@@ -20,24 +22,27 @@ export const fetchDatabases = async (token) => {
     const data = await response.json();
     
     if (!response.ok) {
-      // 노션에서 보내주는 구체적인 에러 메시지(예: API key invalid)를 활용
-      throw new Error(data.message || `노션 응답 오류: ${response.status}`);
+      console.error('Notion API 에러 응답:', data);
+      throw new Error(data.message || `노션 에러 (${response.status})`);
     }
 
-    return (data.results || []).map(db => ({
-      id: db.id,
-      title: db.title[0]?.plain_text || '이름 없음',
-      properties: db.properties
-    }));
+    return (data.results || [])
+      .filter(item => item.object === 'database')
+      .map(db => ({
+        id: db.id,
+        title: db.title[0]?.plain_text || '이름 없음',
+        properties: db.properties
+      }));
   } catch (error) {
-    console.error('Notion Fetch Error:', error);
-    throw new Error(error.message || '노션 API 연결 실패');
+    console.error('Notion Fetch 상세 에러:', error);
+    throw new Error(error.message || '노션 데이터베이스를 불러오지 못했습니다.');
   }
 };
 
 export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
   const apiUrl = 'https://api.notion.com/v1/pages';
   const properties = {};
+  
   if (propertyMap.title) properties[propertyMap.title] = { title: [{ text: { content: book.title } }] };
   if (propertyMap.author) properties[propertyMap.author] = { rich_text: [{ text: { content: book.author } }] };
   if (propertyMap.link) properties[propertyMap.link] = { url: book.link };
@@ -48,8 +53,16 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
     cover: { type: 'external', external: { url: book.cover } },
     properties: properties,
     children: [
-      { object: 'block', type: 'image', image: { type: 'external', external: { url: book.cover } } },
-      { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ text: { content: book.description || '책 설명이 없습니다.' } }] } }
+      { 
+        object: 'block', 
+        type: 'image', 
+        image: { type: 'external', external: { url: book.cover } } 
+      },
+      { 
+        object: 'block', 
+        type: 'paragraph', 
+        paragraph: { rich_text: [{ text: { content: book.description || '설명이 없습니다.' } }] } 
+      }
     ]
   };
 
@@ -66,11 +79,11 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
     
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.message || '노션 페이지 생성 실패');
+      throw new Error(data.message || '노션 등록 실패');
     }
     return data;
   } catch (error) {
-    console.error('Notion Add Error:', error);
+    console.error('Notion Add 상세 에러:', error);
     throw error;
   }
 };
