@@ -1,29 +1,25 @@
 
 /**
  * 알라딘 API 호출 서비스
- * 타임아웃 오류(408) 방지를 위해 더 빠른 프록시(corsproxy.io)를 사용합니다.
+ * Vercel 자체 서버리스 함수(/api/aladdin)를 사용하여 안정성을 극대화합니다.
  */
-const PROXY_BASE = 'https://corsproxy.io/?';
-
 export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
   if (!ttbKey) throw new Error('알라딘 TTB 키가 필요합니다.');
   
-  // HTTPS 강제 및 캐시 방지를 위한 타임스탬프 추가
-  const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=20&start=1&SearchTarget=${searchTarget}&output=js&Version=20131101&_ts=${Date.now()}`;
-  
+  // 상대 경로를 사용하여 Vercel 서버리스 함수 호출
+  const params = new URLSearchParams({
+    ttbkey: ttbKey,
+    Query: query,
+    SearchTarget: searchTarget,
+    _ts: Date.now().toString()
+  });
+
   try {
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    // 배포 환경과 로컬 환경 모두 대응하기 위해 상대 경로 사용
+    const response = await fetch(`/api/aladdin?${params.toString()}`);
 
     if (!response.ok) {
-      if (response.status === 408) {
-        throw new Error('요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.');
-      }
-      throw new Error(`알라딘 연결 실패 (상태코드: ${response.status})`);
+      throw new Error(`연결 실패 (상태코드: ${response.status})`);
     }
     
     const data = await response.json();
@@ -33,7 +29,6 @@ export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
     }
 
     return (data.item || []).map(item => {
-      // 이미지 및 링크 주소를 HTTPS로 변환
       const secureUrl = (url) => {
         if (!url) return '';
         return url.replace('http://', 'https://');
@@ -44,15 +39,14 @@ export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
         title: item.title,
         author: item.author,
         description: item.description,
-        cover: secureUrl(item.cover).replace('sum', '500'), // 고해상도 이미지 사용
+        cover: secureUrl(item.cover).replace('sum', '500'),
         link: secureUrl(item.link)
       };
     });
   } catch (error) {
     console.error('Aladdin API Error:', error);
-    // Failed to fetch 에러 처리
-    if (error.message === 'Failed to fetch') {
-      throw new Error('프록시 서버 연결 실패. 네트워크 상태를 확인하세요.');
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('서버와 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
     }
     throw error;
   }

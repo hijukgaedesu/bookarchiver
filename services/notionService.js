@@ -1,11 +1,9 @@
 
 /**
- * 노션 API를 직접 호출하면 CORS 에러가 나므로, 
- * 범용 CORS 프록시를 통해 중계합니다.
+ * 노션 API 서비스
+ * Vercel 자체 서버리스 함수(/api/notion)를 사용합니다.
  */
-const PROXY_BASE = 'https://corsproxy.io/?';
-
-const getHeaders = (token) => {
+const getHeaders = (token, targetUrl) => {
   let cleanToken = (token || '').trim();
   if (cleanToken.startsWith('Bearer ')) {
     cleanToken = cleanToken.replace('Bearer ', '');
@@ -14,7 +12,8 @@ const getHeaders = (token) => {
   return {
     'Authorization': `Bearer ${cleanToken}`,
     'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'x-target-url': targetUrl
   };
 };
 
@@ -22,9 +21,9 @@ export const fetchDatabases = async (token) => {
   const targetUrl = 'https://api.notion.com/v1/search';
   
   try {
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(targetUrl)}`, {
+    const response = await fetch('/api/notion', {
       method: 'POST',
-      headers: getHeaders(token),
+      headers: getHeaders(token, targetUrl),
       body: JSON.stringify({
         filter: { property: 'object', value: 'database' },
         page_size: 100
@@ -69,9 +68,9 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
   };
 
   try {
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(targetUrl)}`, {
+    const response = await fetch('/api/notion', {
       method: 'POST',
-      headers: getHeaders(token),
+      headers: getHeaders(token, targetUrl),
       body: JSON.stringify(body)
     });
     
