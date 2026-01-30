@@ -7,7 +7,7 @@ import { fetchDatabases, addBookToNotion } from './services/notionService.js';
 const html = htm.bind(React.createElement);
 
 const App = () => {
-  const [step, setStep] = useState('config');
+  const [step, setStep] = useState('search');
   const [config, setConfig] = useState({
     notionToken: localStorage.getItem('notion_token') || '',
     notionDatabaseId: localStorage.getItem('notion_db_id') || '',
@@ -16,24 +16,19 @@ const App = () => {
 
   const [databases, setDatabases] = useState([]);
   const [query, setQuery] = useState('');
-  const [searchTarget, setSearchTarget] = useState('Book'); // 검색 대상 상태 추가
+  const [searchTarget, setSearchTarget] = useState('Book');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingDbs, setFetchingDbs] = useState(false);
   const [addingId, setAddingId] = useState(null);
   const [status, setStatus] = useState(null);
-  const [shareUrl, setShareUrl] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const n = params.get('n');
-    const d = params.get('d');
-    const a = params.get('a');
-
+    const n = params.get('n'), d = params.get('d'), a = params.get('a');
     if (n && d && a) {
       try {
-        const decodedToken = atob(n);
-        const decodedAladdin = atob(a);
+        const decodedToken = atob(n), decodedAladdin = atob(a);
         const newConfig = { notionToken: decodedToken, notionDatabaseId: d, aladdinTtbKey: decodedAladdin };
         setConfig(newConfig);
         autoInitialize(newConfig);
@@ -49,11 +44,7 @@ const App = () => {
       setDatabases(dbs);
       setStep('search');
     } catch (err) {
-      setStatus({ 
-        type: 'error', 
-        msg: '연결 실패: ' + err.message,
-        tip: '토큰이 올바른지 확인하고, 노션 워크스페이스에 이 통합이 초대되었는지 확인해 주세요.'
-      });
+      setStatus({ type: 'error', msg: '연결 실패' });
     } finally { setFetchingDbs(false); }
   };
 
@@ -68,48 +59,30 @@ const App = () => {
     if (!selectedDb) return null;
     const props = selectedDb.properties;
     const map = { title: '', author: '', link: '' };
-    const typeErrors = [];
-    const missing = [];
     const titleKey = Object.keys(props).find(key => props[key].type === 'title');
-    if (titleKey) map.title = titleKey; else missing.push('제목');
-    if (props['작가']) {
-      if (props['작가'].type === 'rich_text') map.author = '작가';
-      else typeErrors.push(`'작가' 컬럼을 '텍스트' 타입으로 변경해 주세요.`);
-    } else missing.push('작가');
-    if (props['링크']) {
-      if (props['링크'].type === 'url') map.link = '링크';
-      else typeErrors.push(`'링크' 컬럼을 'URL' 타입으로 변경해 주세요.`);
-    } else missing.push('링크');
-    return { map, missing, typeErrors };
+    if (titleKey) map.title = titleKey;
+    if (props['작가']?.type === 'rich_text') map.author = '작가';
+    if (props['링크']?.type === 'url') map.link = '링크';
+    return { map };
   }, [config.notionDatabaseId, databases]);
 
   const handleFetchDatabases = async () => {
-    if (!config.notionToken) { setStatus({ type: 'error', msg: '토큰을 입력하세요.' }); return; }
+    if (!config.notionToken) { setStatus({ type: 'error', msg: '토큰 누락' }); return; }
     setFetchingDbs(true); setStatus(null);
     try {
       const dbs = await fetchDatabases(config.notionToken);
       setDatabases(dbs);
-      setStatus({ type: 'success', msg: `${dbs.length}개의 DB를 찾았습니다!` });
-    } catch (err) { 
-      const is401 = err.message.includes('유효하지 않습니다');
-      setStatus({ 
-        type: 'error', 
-        msg: is401 ? '노션 토큰 오류' : '연결 오류: ' + err.message,
-        tip: is401 ? '입력하신 노션 API 토큰(secret_...)이 틀렸습니다. 다시 복사해 주세요.' : '네트워크 상태가 불안정하거나 프록시 서버가 차단되었을 수 있습니다.'
-      }); 
-    }
+      setStatus({ type: 'success', msg: `조회 완료` });
+    } catch (err) { setStatus({ type: 'error', msg: '조회 에러' }); }
     finally { setFetchingDbs(false); }
   };
 
   const generateShareUrl = () => {
     const baseUrl = window.location.origin + window.location.pathname;
-    const n = btoa(config.notionToken.trim());
-    const a = btoa(config.aladdinTtbKey.trim());
-    const d = config.notionDatabaseId;
+    const n = btoa(config.notionToken.trim()), a = btoa(config.aladdinTtbKey.trim()), d = config.notionDatabaseId;
     const finalUrl = `${baseUrl}?n=${n}&a=${a}&d=${d}`;
-    setShareUrl(finalUrl);
     navigator.clipboard.writeText(finalUrl);
-    setStatus({ type: 'success', msg: '전용 링크 복사 완료! ♡' });
+    setStatus({ type: 'success', msg: '복사 완료' });
   };
 
   const handleSearch = async (e) => {
@@ -117,13 +90,9 @@ const App = () => {
     if (!query) return;
     setLoading(true); setStatus(null);
     try {
-      // searchTarget 추가 전달
       const books = await searchBooks(query, config.aladdinTtbKey, searchTarget);
       setResults(books);
-      if (books.length === 0) {
-        setStatus({ type: 'error', msg: '검색 결과가 없습니다.', tip: '검색 대상을 [전체] 또는 [eBook]으로 바꿔보세요.' });
-      }
-    } catch (err) { setStatus({ type: 'error', msg: '검색 실패: ' + err.message }); }
+    } catch (err) { setStatus({ type: 'error', msg: '검색 실패' }); }
     finally { setLoading(false); }
   };
 
@@ -131,122 +100,135 @@ const App = () => {
     setAddingId(book.itemId); setStatus(null);
     try {
       await addBookToNotion(book, config.notionToken, config.notionDatabaseId, propertyStatus?.map);
-      setStatus({ type: 'success', msg: `[${book.title}] 등록 성공!`, tip: "노션에서 확인해 보세요!" });
-    } catch (err) { setStatus({ type: 'error', msg: '등록 실패: ' + err.message }); }
+      setStatus({ type: 'success', msg: '저장됨!' });
+    } catch (err) { setStatus({ type: 'error', msg: '저장 실패' }); }
     finally { setAddingId(null); }
   };
 
   return html`
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#fcfcfc]">
-      <div className="w-full max-w-[480px] pink-window flex flex-col h-[580px] shadow-2xl relative overflow-hidden">
-        ${fetchingDbs && html`
-          <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-4 border-[#FFDDE5] border-t-[#D67C8C] rounded-full animate-spin mb-4"></div>
-            <p className="text-xs text-[#D67C8C] font-bold">보안 연결 시도 중...</p>
-            <p className="text-[10px] text-gray-400 mt-2 italic">노션 서버와 통신 중입니다</p>
-          </div>
-        `}
-        <div className="pink-header flex justify-between items-center">
-          <div className="flex items-center gap-2 text-[#D67C8C] font-bold">
-            <i className="fas ${step === 'config' ? 'fa-cog' : 'fa-search'}"></i>
-            <span className="text-sm uppercase tracking-wider">${step === 'config' ? 'Config' : 'Search'}</span>
-          </div>
-          ${step === 'search' && html`<button onClick=${() => setStep('config')} className="text-[10px] px-3 py-1 bg-white border border-[#FFDDE5] rounded-full text-[#D67C8C]">Setting</button>`}
+    <div className="mac-browser relative">
+      ${fetchingDbs && html`
+        <div className="absolute inset-0 bg-white/60 z-50 flex flex-col items-center justify-center backdrop-blur-[1px]">
+          <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-0.5"></div>
+          <p className="text-[6.5px] text-blue-600 font-bold uppercase">Sync...</p>
         </div>
-        <div className="p-6 flex flex-col flex-1 overflow-hidden">
-          ${step === 'config' ? html`
-            <div className="flex flex-col h-full">
-              <div className="mb-4">
-                <h1 className="text-xl font-bold text-[#D67C8C] mb-0.5">Book Archiver</h1>
-                <p className="text-[10px] text-gray-400">나만의 소중한 서재를 만들어보세요 ♡</p>
-              </div>
-              <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Notion Token</label>
-                  <input type="password" value=${config.notionToken} onChange=${e => setConfig({...config, notionToken: e.target.value})} placeholder="secret_..." className="w-full p-2.5 text-xs pink-input" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Aladdin Key</label>
-                  <input type="text" value=${config.aladdinTtbKey} onChange=${e => setConfig({...config, aladdinTtbKey: e.target.value})} placeholder="TTB Key" className="w-full p-2.5 text-xs pink-input" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-[#D67C8C] ml-1 uppercase">Select Database</label>
-                  <div className="flex gap-2">
-                    <select value=${config.notionDatabaseId} onChange=${e => setConfig({...config, notionDatabaseId: e.target.value})} className="flex-1 p-2.5 text-xs pink-input bg-white appearance-none cursor-pointer">
-                      <option value="">DB를 선택하세요</option>
-                      ${databases.map(db => html`<option key=${db.id} value=${db.id}>${db.title}</option>`)}
-                    </select>
-                    <button onClick=${handleFetchDatabases} className="px-3 bg-white border border-[#FFC1CC] text-[#D67C8C] rounded-lg text-xs font-bold active:scale-95 transition-all">연결</button>
-                  </div>
-                </div>
-                ${status && html`
-                  <div className="p-3 rounded-xl border ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}">
-                    <p className="text-[10px] font-bold mb-0.5">${status.msg}</p>
-                    ${status.tip && html`<p className="text-[9px] opacity-80 mt-0.5">💡 ${status.tip}</p>`}
-                  </div>
-                `}
-              </div>
-              <div className="flex flex-col gap-2 mt-3">
-                <button onClick=${() => setStep('search')} className="w-full py-3 bg-[#D67C8C] text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all">시작하기</button>
-                <button onClick=${generateShareUrl} className="w-full py-2 bg-white text-[#D67C8C] border border-[#FFDDE5] rounded-xl text-[10px] font-bold hover:bg-[#FFF0F3] transition-all">노션 전용 링크 복사</button>
+      `}
+
+      <header className="browser-header">
+        <div className="flex justify-between items-center pr-2">
+          <div className="traffic-lights">
+            <div className="light red"></div>
+            <div className="light yellow"></div>
+            <div className="light green"></div>
+          </div>
+        </div>
+        
+        <div className="tabs-container">
+          <div className=${`tab ${step === 'search' ? 'active' : ''}`} onClick=${() => setStep('search')}>
+            <i className="fas fa-bookmark text-[5.5px]"></i>
+            <span>Library</span>
+          </div>
+          <div className=${`tab ${step === 'config' ? 'active' : ''}`} onClick=${() => setStep('config')}>
+            <i className="fas fa-cog text-[5.5px]"></i>
+            <span>Settings</span>
+          </div>
+        </div>
+      </header>
+
+      <div className="url-bar-container">
+        <div className="url-bar">
+          /${step === 'config' ? 'settings' : 'search'}
+        </div>
+      </div>
+
+      <main className="flex-1 flex flex-col overflow-hidden bg-white">
+        ${step === 'config' ? html`
+          <div className="config-view flex-1 overflow-y-auto custom-scrollbar">
+            <div className="config-row">
+              <label className="config-label">Notion Secret</label>
+              <input type="password" value=${config.notionToken} onChange=${e => setConfig({...config, notionToken: e.target.value})} className="config-input" placeholder="secret_..." />
+            </div>
+            <div className="config-row">
+              <label className="config-label">Aladdin TTB</label>
+              <input type="text" value=${config.aladdinTtbKey} onChange=${e => setConfig({...config, aladdinTtbKey: e.target.value})} className="config-input" placeholder="TTB-key" />
+            </div>
+            <div className="config-row">
+              <label className="config-label">Target DB</label>
+              <div className="flex gap-1">
+                <select value=${config.notionDatabaseId} onChange=${e => setConfig({...config, notionDatabaseId: e.target.value})} className="flex-1 config-input bg-white">
+                  <option value="">DB 선택</option>
+                  ${databases.map(db => html`<option key=${db.id} value=${db.id}>${db.title}</option>`)}
+                </select>
+                <button onClick=${handleFetchDatabases} className="px-1 h-5 bg-slate-50 border border-slate-200 text-slate-500 rounded text-[6.5px] font-bold">조회</button>
               </div>
             </div>
-          ` : html`
-            <div className="flex flex-col h-full">
-              <form onSubmit=${handleSearch} className="flex gap-2 items-center shrink-0">
+
+            <div className="mt-auto pt-1.5 flex gap-1">
+              <button onClick=${() => setStep('search')} className="flex-1 h-5.5 bg-blue-500 text-white rounded font-bold text-[7.5px] hover:bg-blue-600">저장 및 시작</button>
+              <button onClick=${generateShareUrl} className="flex-1 h-5.5 bg-white text-blue-500 border border-blue-200 rounded font-bold text-[7.5px] hover:bg-blue-50">링크 복사</button>
+            </div>
+          </div>
+        ` : html`
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="search-container">
+              <form onSubmit=${handleSearch} className="search-form">
                 <select 
                   value=${searchTarget} 
                   onChange=${e => setSearchTarget(e.target.value)}
-                  className="w-20 p-2.5 pink-input text-[10px] bg-white appearance-none cursor-pointer text-[#D67C8C] font-bold text-center"
+                  className="blue-select"
                 >
                   <option value="Book">도서</option>
                   <option value="eBook">eBook</option>
-                  <option value="All">전체</option>
                 </select>
                 <input 
                   type="text" 
                   value=${query} 
                   onChange=${e => setQuery(e.target.value)} 
-                  placeholder="검색어 입력..." 
-                  className="flex-1 p-2.5 pink-input text-sm shadow-inner" 
+                  placeholder="검색..." 
+                  className="blue-search-input" 
                 />
-                <button type="submit" className="pink-button-square h-10 w-10">
-                  ${loading ? html`<i className="fas fa-spinner fa-spin"></i>` : html`<i className="fas fa-search"></i>`}
+                <button type="submit" className="blue-search-btn">
+                  ${loading ? html`<i className="fas fa-spinner fa-spin text-[8px]"></i>` : html`<i className="fas fa-search text-[8px]"></i>`}
                 </button>
               </form>
-              <div className="dotted-line shrink-0 my-3"></div>
-              
-              ${status && html`
-                <div className="mb-3 p-2.5 rounded-lg text-[10px] ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} animate-in fade-in duration-300">
-                  <b>${status.msg}</b>
-                  ${status.tip && html`<p className="opacity-70 mt-0.5">${status.tip}</p>`}
+            </div>
+
+            <div className="results-list">
+              ${results.length > 0 ? html`
+                <div>
+                  ${results.map(book => html`
+                    <div key=${book.itemId} className="compact-book-card group">
+                      <img src=${book.cover} className="w-4.5 h-6.5 object-cover rounded-sm shadow-xs" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-[8px] text-slate-700 truncate leading-none">${book.title}</h3>
+                        <p className="text-[6px] text-slate-400 truncate mt-0.5">${book.author}</p>
+                      </div>
+                      <button 
+                        onClick=${() => handleAddToNotion(book)} 
+                        disabled=${addingId === book.itemId}
+                        className="h-4 px-1.5 bg-blue-50 text-blue-500 rounded-sm text-[7px] font-bold hover:bg-blue-500 hover:text-white disabled:opacity-50"
+                      >
+                        ${addingId === book.itemId ? html`<i className="fas fa-spinner fa-spin"></i>` : '저장'}
+                      </button>
+                    </div>
+                  `)}
+                </div>
+              ` : html`
+                <div className="empty-state">
+                  <i className="fas fa-search opacity-10 text-xl mb-0.5"></i>
+                  <p className="text-[7.5px] font-bold">도서 검색</p>
                 </div>
               `}
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                ${results.length > 0 ? html`
-                  <div className="grid gap-3 pb-3">
-                    ${results.map(book => html`
-                      <div key=${book.itemId} className="flex gap-3 p-2.5 bg-white border border-[#f5f5f5] rounded-2xl group transition-all hover:border-[#FFDDE5] hover:shadow-sm">
-                        <img src=${book.cover} className="w-16 h-24 object-cover rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
-                        <div className="flex flex-col justify-between flex-1 py-0.5 min-w-0">
-                          <div>
-                            <h3 className="font-bold text-[11px] line-clamp-2 leading-tight">${book.title}</h3>
-                            <p className="text-[9px] text-gray-400 mt-1 truncate">${book.author}</p>
-                          </div>
-                          <button onClick=${() => handleAddToNotion(book)} className="w-full py-1.5 bg-[#FFF0F3] text-[#D67C8C] rounded-xl text-[10px] font-bold hover:bg-[#D67C8C] hover:text-white transition-colors">
-                            ${addingId === book.itemId ? html`<i className="fas fa-spinner fa-spin"></i>` : '저장하기'}
-                          </button>
-                        </div>
-                      </div>
-                    `)}
-                  </div>
-                ` : html`<div className="h-full flex flex-col items-center justify-center text-[#e2e2e2] py-10"><i className="fas fa-magic text-4xl mb-3 opacity-20"></i><p className="text-xs">검색 결과가 여기에 나타나요!</p></div>`}
-              </div>
             </div>
-          `}
-        </div>
-      </div>
+
+            ${status && html`
+              <div className=${`status-bar ${status.type === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                ${status.msg}
+              </div>
+            `}
+          </div>
+        `}
+      </main>
     </div>
   `;
 };
