@@ -1,12 +1,11 @@
 
 /**
  * 노션 API를 직접 호출하면 CORS 에러가 나므로, 
- * Vercel의 서버리스 함수(/api/notion)를 통해 중계합니다.
+ * 범용 CORS 프록시를 통해 중계합니다.
  */
-const NOTION_PROXY = '/api/notion';
+const PROXY_BASE = 'https://corsproxy.io/?';
 
-const getHeaders = (token, targetUrl) => {
-  // 토큰 정제: 공백 제거 및 Bearer 중복 방지
+const getHeaders = (token) => {
   let cleanToken = (token || '').trim();
   if (cleanToken.startsWith('Bearer ')) {
     cleanToken = cleanToken.replace('Bearer ', '');
@@ -15,8 +14,7 @@ const getHeaders = (token, targetUrl) => {
   return {
     'Authorization': `Bearer ${cleanToken}`,
     'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json',
-    'x-target-url': targetUrl
+    'Content-Type': 'application/json'
   };
 };
 
@@ -24,9 +22,9 @@ export const fetchDatabases = async (token) => {
   const targetUrl = 'https://api.notion.com/v1/search';
   
   try {
-    const response = await fetch(NOTION_PROXY, {
+    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(targetUrl)}`, {
       method: 'POST',
-      headers: getHeaders(token, targetUrl),
+      headers: getHeaders(token),
       body: JSON.stringify({
         filter: { property: 'object', value: 'database' },
         page_size: 100
@@ -35,10 +33,6 @@ export const fetchDatabases = async (token) => {
 
     const data = await response.json();
     if (!response.ok) {
-      // 401 에러인 경우 더 구체적인 메시지 던짐
-      if (response.status === 401) {
-        throw new Error('노션 API 토큰이 유효하지 않습니다.');
-      }
       throw new Error(data.message || `노션 에러 (${response.status})`);
     }
 
@@ -75,9 +69,9 @@ export const addBookToNotion = async (book, token, databaseId, propertyMap) => {
   };
 
   try {
-    const response = await fetch(NOTION_PROXY, {
+    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(targetUrl)}`, {
       method: 'POST',
-      headers: getHeaders(token, targetUrl),
+      headers: getHeaders(token),
       body: JSON.stringify(body)
     });
     

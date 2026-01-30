@@ -21,11 +21,11 @@
         }
 
         .mac-browser {
-            width: 300px;
-            height: 250px;    
+            width: 400px; /* 가로 확장 */
+            height: 350px; /* 세로 확장 */
             background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -34,20 +34,20 @@
 
         .browser-header {
             background-color: #D1EAFF;
-            padding-top: 10px;
+            padding-top: 12px;
             border-bottom: 1px solid #b9d6f2;
         }
 
         .traffic-lights {
             display: flex;
-            gap: 4px;
-            padding-left: 12px;
-            margin-bottom: 8px;
+            gap: 5px;
+            padding-left: 14px;
+            margin-bottom: 10px;
         }
 
         .light {
-            width: 7px;
-            height: 7px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
         }
         .light.red { background-color: #ff5f56; }
@@ -56,23 +56,23 @@
 
         .tabs-container {
             display: flex;
-            padding-left: 6px; /* 왼쪽으로 더 밀착 */
-            gap: 3px;
+            padding-left: 8px; /* 왼쪽 밀착 유지 */
+            gap: 4px;
             align-items: flex-end;
         }
 
         .tab {
-            height: 24px;
+            height: 28px; /* 높이 확대 */
             background-color: rgba(255, 255, 255, 0.4);
-            padding: 0 14px;
-            border-radius: 6px 6px 0 0;
+            padding: 0 18px; /* 너비 확대 */
+            border-radius: 8px 8px 0 0;
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: 8px;
+            gap: 6px;
+            font-size: 11px; /* 가독성을 위한 폰트 확대 */
             color: #475569;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             border: 1px solid transparent;
             border-bottom: none;
         }
@@ -85,28 +85,27 @@
             position: relative;
             bottom: -1px;
             z-index: 10;
-            padding: 0 16px;
         }
 
         .url-bar-container {
             background-color: #ffffff;
-            padding: 5px 10px;
+            padding: 6px 14px;
             border-bottom: 1px solid #f1f5f9;
         }
 
         .url-bar {
             background-color: #f8fafc;
-            height: 16px;
-            border-radius: 8px;
+            height: 20px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            padding: 0 10px;
-            font-size: 7.5px;
+            padding: 0 12px;
+            font-size: 10px;
             color: #94a3b8;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
-            width: 3px;
+            width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #e2e8f0;
@@ -114,7 +113,7 @@
         }
         
         .search-row-container {
-            padding: 8px 12px;
+            padding: 10px 14px;
             background-color: #ffffff;
             border-bottom: 1px solid #f8fafc;
         }
@@ -126,36 +125,36 @@
         }
 
         .search-select {
-            height: 28px;
-            width: 46px;
+            height: 32px;
+            width: 55px;
             border: 1px solid #e2e8f0;
             border-right: none;
-            border-radius: 8px 0 0 8px;
-            font-size: 8px;
+            border-radius: 10px 0 0 10px;
+            font-size: 11px;
             font-weight: 700;
-            padding: 0 4px;
+            padding: 0 6px;
             background-color: #fcfdff;
             color: #64748b;
         }
 
         .search-input {
             flex: 1;
-            height: 28px;
+            height: 32px;
             border: 1px solid #e2e8f0;
             border-left: 1px solid #f1f5f9;
             border-right: none;
-            font-size: 9px;
-            padding: 0 10px;
+            font-size: 12px;
+            padding: 0 12px;
         }
 
         .search-button {
-            width: 44px;
-            height: 28px;
-            background-color: #e0f2fe; /* 소프트 블루 배경 */
+            width: 50px;
+            height: 32px;
+            background-color: #e0f2fe; /* 소프트 블루 */
             color: #0284c7;
             border: 1px solid #bae6fd;
             border-left: none;
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 10px 10px 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -166,17 +165,100 @@
         .search-button:hover {
             background-color: #bae6fd;
             color: #0369a1;
-            transform: scale(1.02);
         }
 
         .search-button i {
-            font-size: 13px;
+            font-size: 16px;
+        }
+
+        /* 검색 결과 레이아웃 최적화 */
+        .book-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.15s ease;
+        }
+
+        .book-item:hover {
+            background-color: #f0f9ff;
+        }
+
+        .book-cover {
+            width: 46px; /* 이미지 크기 최적화 */
+            height: 66px;
+            object-fit: cover;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .book-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .book-title {
+            font-size: 12px; /* 폰트 확대 */
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.3;
+            margin-bottom: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .book-author {
+            font-size: 10px;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .save-btn {
+            height: 24px;
+            padding: 0 12px;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #2563eb;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .save-btn:hover {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         input:focus, select:focus {
             outline: none;
             border-color: #7dd3fc !important;
             z-index: 10;
+        }
+
+        /* 상태 메시지 */
+        .status-msg {
+            padding: 6px 14px;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            border-top: 1px solid #f1f5f9;
         }
     </style>
 <script type="importmap">
