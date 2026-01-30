@@ -24,8 +24,8 @@
             width: 300px;
             height: 250px;    
             background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -34,20 +34,20 @@
 
         .browser-header {
             background-color: #D1EAFF;
-            padding-top: 4px;
+            padding-top: 10px;
             border-bottom: 1px solid #b9d6f2;
         }
 
         .traffic-lights {
             display: flex;
-            gap: 3px;
-            padding-left: 8px;
-            margin-bottom: 2px;
+            gap: 4px;
+            padding-left: 12px;
+            margin-bottom: 8px;
         }
 
         .light {
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
         }
         .light.red { background-color: #ff5f56; }
@@ -56,23 +56,23 @@
 
         .tabs-container {
             display: flex;
-            padding-left: 6px;
-            gap: 2px;
+            padding-left: 6px; /* 왼쪽으로 더 밀착 */
+            gap: 3px;
             align-items: flex-end;
         }
 
         .tab {
-            height: 16px;
-            background-color: rgba(255, 255, 255, 0.3);
-            padding: 0 8px;
-            border-radius: 4px 4px 0 0;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.4);
+            padding: 0 14px;
+            border-radius: 6px 6px 0 0;
             display: flex;
             align-items: center;
-            gap: 3px;
-            font-size: 7.5px;
+            gap: 5px;
+            font-size: 8px;
             color: #475569;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
             border-bottom: none;
         }
@@ -85,22 +85,23 @@
             position: relative;
             bottom: -1px;
             z-index: 10;
+            padding: 0 16px;
         }
 
         .url-bar-container {
             background-color: #ffffff;
-            padding: 2px 6px;
+            padding: 5px 10px;
             border-bottom: 1px solid #f1f5f9;
         }
 
         .url-bar {
             background-color: #f8fafc;
-            height: 12px;
-            border-radius: 6px;
+            height: 16px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            padding: 0 6px;
-            font-size: 7px;
+            padding: 0 10px;
+            font-size: 7.5px;
             color: #94a3b8;
         }
 
@@ -113,63 +114,68 @@
         }
         
         .search-row-container {
-            padding: 5px 8px;
+            padding: 8px 12px;
             background-color: #ffffff;
             border-bottom: 1px solid #f8fafc;
         }
 
         .search-input-group {
             display: flex;
-            gap: 2px;
+            gap: 0;
             align-items: center;
         }
 
         .search-select {
-            height: 24px;
-            width: 42px;
+            height: 28px;
+            width: 46px;
             border: 1px solid #e2e8f0;
-            border-radius: 5px 0 0 5px;
-            font-size: 7.5px;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            font-size: 8px;
             font-weight: 700;
-            padding: 0 1px;
+            padding: 0 4px;
             background-color: #fcfdff;
             color: #64748b;
         }
 
         .search-input {
             flex: 1;
-            height: 24px;
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
-            border-left: none;
+            height: 28px;
+            border: 1px solid #e2e8f0;
+            border-left: 1px solid #f1f5f9;
             border-right: none;
-            font-size: 8.5px;
-            padding: 0 6px;
+            font-size: 9px;
+            padding: 0 10px;
         }
 
         .search-button {
-            width: 36px;
-            height: 24px;
-            background-color: #2563eb;
-            color: white;
-            border-radius: 0 5px 5px 0;
+            width: 44px;
+            height: 28px;
+            background-color: #e0f2fe; /* 소프트 블루 배경 */
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
         
         .search-button:hover {
-            background-color: #1d4ed8;
+            background-color: #bae6fd;
+            color: #0369a1;
+            transform: scale(1.02);
         }
 
         .search-button i {
-            font-size: 11px; /* 아이콘 크기 키움 */
+            font-size: 13px;
         }
 
         input:focus, select:focus {
             outline: none;
-            border-color: #3b82f6 !important;
+            border-color: #7dd3fc !important;
             z-index: 10;
         }
     </style>
