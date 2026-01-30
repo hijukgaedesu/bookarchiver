@@ -64,13 +64,13 @@ const App = () => {
   }, [config.notionDatabaseId, databases]);
 
   const handleFetchDatabases = async () => {
-    if (!config.notionToken) { setStatus({ type: 'error', msg: '토큰을 입력하세요.' }); return; }
+    if (!config.notionToken) { setStatus({ type: 'error', msg: '토큰을 먼저 입력하세요.' }); return; }
     setFetchingDbs(true); setStatus(null);
     try {
       const dbs = await fetchDatabases(config.notionToken);
       setDatabases(dbs);
-      setStatus({ type: 'success', msg: 'DB 조회 완료' });
-    } catch (err) { setStatus({ type: 'error', msg: '조회 실패' }); }
+      setStatus({ type: 'success', msg: 'DB 조회 완료!' });
+    } catch (err) { setStatus({ type: 'error', msg: '연결 실패. 설정을 확인하세요.' }); }
     finally { setFetchingDbs(false); }
   };
 
@@ -81,17 +81,19 @@ const App = () => {
     try {
       const books = await searchBooks(query, config.aladdinTtbKey, searchTarget);
       setResults(books);
-    } catch (err) { setStatus({ type: 'error', msg: '검색 실패' }); }
+    } catch (err) { 
+      setStatus({ type: 'error', msg: err.message }); 
+    }
     finally { setLoading(false); }
   };
 
   const handleAddToNotion = async (book) => {
-    if (!config.notionDatabaseId) { setStatus({ type: 'error', msg: 'DB를 먼저 설정하세요.' }); return; }
+    if (!config.notionDatabaseId) { setStatus({ type: 'error', msg: 'DB를 선택해 주세요.' }); return; }
     setAddingId(book.itemId); setStatus(null);
     try {
       await addBookToNotion(book, config.notionToken, config.notionDatabaseId, propertyMap);
       setStatus({ type: 'success', msg: `[${book.title}] 저장 완료!` });
-    } catch (err) { setStatus({ type: 'error', msg: '저장 실패' }); }
+    } catch (err) { setStatus({ type: 'error', msg: '저장 실패. 토큰/권한 확인 요망.' }); }
     finally { setAddingId(null); }
   };
 
@@ -100,7 +102,7 @@ const App = () => {
     const n = btoa(config.notionToken), a = btoa(config.aladdinTtbKey), d = config.notionDatabaseId;
     const finalUrl = `${baseUrl}?n=${n}&a=${a}&d=${d}`;
     navigator.clipboard.writeText(finalUrl);
-    setStatus({ type: 'success', msg: '위젯 주소가 클립보드에 복사되었습니다.' });
+    setStatus({ type: 'success', msg: '위젯 링크가 복사되었습니다.' });
   };
 
   return html`
@@ -108,7 +110,7 @@ const App = () => {
       ${fetchingDbs && html`
         <div className="absolute inset-0 bg-white/60 z-50 flex flex-col items-center justify-center backdrop-blur-[2px]">
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-          <p className="text-[10px] text-blue-600 font-bold tracking-tight uppercase">Syncing with Notion</p>
+          <p className="text-[10px] text-blue-600 font-bold uppercase">Connecting...</p>
         </div>
       `}
 
@@ -154,7 +156,7 @@ const App = () => {
                   type="text" 
                   value=${query} 
                   onChange=${e => setQuery(e.target.value)} 
-                  placeholder="제목, 저자, ISBN 검색..." 
+                  placeholder="제목 또는 저자 검색..." 
                   className="search-input" 
                 />
                 <button type="submit" className="search-button">
@@ -225,7 +227,7 @@ const App = () => {
                   ${databases.map(db => html`<option key=${db.id} value=${db.id}>${db.title}</option>`)}
                 </select>
                 <button onClick=${handleFetchDatabases} className="px-4 h-8 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100">
-                   갱신
+                   조회
                 </button>
               </div>
             </div>

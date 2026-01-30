@@ -1,22 +1,40 @@
 
-const PROXY_BASE = 'https://api.allorigins.win/raw?url=';
+/**
+ * 알라딘 API 호출 서비스
+ * 타임아웃 오류(408) 방지를 위해 더 빠른 프록시(corsproxy.io)를 사용합니다.
+ */
+const PROXY_BASE = 'https://corsproxy.io/?';
 
 export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
   if (!ttbKey) throw new Error('알라딘 TTB 키가 필요합니다.');
   
-  // searchTarget: Book(국내도서), Foreign(외국도서), eBook(전자책), All(전체)
-  const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=20&start=1&SearchTarget=${searchTarget}&output=js&Version=20131101&_=${Date.now()}`;
+  // HTTPS 강제 및 캐시 방지를 위한 타임스탬프 추가
+  const apiUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ttbKey}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=20&start=1&SearchTarget=${searchTarget}&output=js&Version=20131101&_ts=${Date.now()}`;
   
   try {
-    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`);
-    if (!response.ok) throw new Error(`알라딘 연결 실패 (상태코드: ${response.status})`);
+    const response = await fetch(`${PROXY_BASE}${encodeURIComponent(apiUrl)}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 408) {
+        throw new Error('요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      throw new Error(`알라딘 연결 실패 (상태코드: ${response.status})`);
+    }
     
     const data = await response.json();
-    if (data.errorCode) throw new Error(data.errorMessage || '알라딘 API 키 오류');
+    
+    if (data.errorCode) {
+      throw new Error(data.errorMessage || '알라딘 API 키를 확인해 주세요.');
+    }
 
     return (data.item || []).map(item => {
-      // 모든 http 주소를 https로 강제 변환하여 보안 오류 방지
-      const fixUrl = (url) => {
+      // 이미지 및 링크 주소를 HTTPS로 변환
+      const secureUrl = (url) => {
         if (!url) return '';
         return url.replace('http://', 'https://');
       };
@@ -26,12 +44,16 @@ export const searchBooks = async (query, ttbKey, searchTarget = 'Book') => {
         title: item.title,
         author: item.author,
         description: item.description,
-        cover: fixUrl(item.cover).replace('sum', '500'), // 고해상도 이미지로 교체
-        link: fixUrl(item.link)
+        cover: secureUrl(item.cover).replace('sum', '500'), // 고해상도 이미지 사용
+        link: secureUrl(item.link)
       };
     });
   } catch (error) {
     console.error('Aladdin API Error:', error);
-    throw new Error(`알라딘 서버 접속 실패: ${error.message}`);
+    // Failed to fetch 에러 처리
+    if (error.message === 'Failed to fetch') {
+      throw new Error('프록시 서버 연결 실패. 네트워크 상태를 확인하세요.');
+    }
+    throw error;
   }
 };
