@@ -12,7 +12,7 @@
         
         body {
             font-family: 'Inter', 'Noto Sans KR', sans-serif;
-            background-color: transparent;
+            background-color: #ffffff; /* 바깥 배경 하얗게 */
             margin: 0;
             display: flex;
             align-items: center;
@@ -25,7 +25,7 @@
             height: 350px;
             background-color: #ffffff;
             border-radius: 14px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            box-shadow: none; /* 그림자 제거 */
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -56,7 +56,7 @@
 
         .tabs-container {
             display: flex;
-            padding-left: 12px; /* 탭 위치를 오른쪽으로 살짝 이동 */
+            padding-left: 12px;
             gap: 4px;
             align-items: flex-end;
         }
@@ -167,7 +167,6 @@
             color: #0369a1;
         }
 
-        /* 결과 리스트 레이아웃 */
         .book-item {
             display: flex;
             align-items: center;
